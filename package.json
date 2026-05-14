@@ -1,0 +1,23 @@
+{
+  "name": "omarchy-radix-themes",
+  "module": "index.ts",
+  "type": "module",
+  "private": true,
+  "scripts": {
+    "dev": "ENV=development bun --watch index.ts",
+    "build": "bun build --compile index.ts"
+  },
+  "devDependencies": {
+    "@types/bun": "latest"
+  },
+  "peerDependencies": {
+    "typescript": "^5"
+  },
+  "dependencies": {
+    "@clack/prompts": "^1.4.0",
+    "@radix-ui/colors": "^3.0.0",
+    "bezier-easing": "^3.0.0",
+    "colorjs.io": "^0.6.1",
+    "effect": "^3.21.2"
+  }
+}
