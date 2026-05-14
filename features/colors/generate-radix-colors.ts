@@ -1,4 +1,12 @@
-/** biome-ignore-all lint/style/noNonNullAssertion: adapted from https://github.com/radix-ui/website/blob/main/components/generateRadixColors.tsx */
+/**
+ * Adapted from the Radix UI website:
+ * https://github.com/radix-ui/website/blob/main/components/generateRadixColors.tsx
+ *
+ * Copyright (c) Radix UI, licensed under the MIT License.
+ * See https://github.com/radix-ui/website/blob/main/LICENSE for details.
+ */
+
+/* biome-ignore-all lint/style/noNonNullAssertion: asserted from upstream source */
 import * as RadixColors from "@radix-ui/colors";
 import BezierEasing from "bezier-easing";
 import Color from "colorjs.io";
