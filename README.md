@@ -1,4 +1,4 @@
-# omarchy-radix-themes
+# omarchy-radix
 
 To install dependencies:
 
