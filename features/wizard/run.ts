@@ -11,23 +11,16 @@ import {
 import * as RadixColors from "@radix-ui/colors";
 import { Effect, Option, pipe, Schema } from "effect";
 import { grayScaleNames, scaleNames } from "../colors/generate-radix-colors";
-
-const StageBasePalette = Schema.Literal(...grayScaleNames);
-const StageAccent = Schema.Literal(...scaleNames);
-const StageTone = Schema.Literal("calm", "balanced", "high-contrast");
-const StageComponents = Schema.Array(
-	Schema.Literal("waybar", "walker", "hyprland", "hyprlock"),
-);
-const StageIdentityName = Schema.String.pipe(
-	Schema.filter((s) => s.length > 0 || "Name must be a non-empty"),
-);
-const StageIdentitySlug = Schema.String;
-const StageIdentityMode = Schema.Literal("dark", "light");
-const StageIdentity = Schema.Struct({
-	name: StageIdentityName,
-	slug: StageIdentitySlug,
-	mode: StageIdentityMode,
-});
+import { mapPaletteToOmarchy } from "../colors/map";
+import {
+	type Accent,
+	type BasePalette,
+	type Components,
+	IdentityName,
+	type Mode,
+	ThemeConfig,
+	type Tone,
+} from "../shared";
 
 export const run = Effect.gen(function* () {
 	intro(
@@ -39,7 +32,7 @@ export const run = Effect.gen(function* () {
 			group(
 				{
 					mode: () =>
-						select<typeof StageIdentityMode.Type>({
+						select<typeof Mode.Type>({
 							message: "Choose a mode",
 							options: [{ value: "dark" }, { value: "light" }],
 							initialValue: "dark" as const,
@@ -49,7 +42,7 @@ export const run = Effect.gen(function* () {
 						// biome-ignore lint/suspicious/noExplicitAny: have to type cast because of bug https://github.com/bombshell-dev/clack/issues/234
 						{ results }: { results: Record<string, any> },
 					) =>
-						select<typeof StageBasePalette.Type>({
+						select<typeof BasePalette.Type>({
 							message: "Choose a base palette",
 							options: grayScaleNames.map((name) => {
 								const radixColorKey =
@@ -62,7 +55,7 @@ export const run = Effect.gen(function* () {
 								return {
 									value: name,
 									label: `${name} ${ansi}■\x1b[0m`,
-								} as SelectOption<typeof StageBasePalette.Type>;
+								} as SelectOption<typeof BasePalette.Type>;
 							}),
 							initialValue: "slate" as const,
 						}),
@@ -71,7 +64,7 @@ export const run = Effect.gen(function* () {
 						// biome-ignore lint/suspicious/noExplicitAny: have to type cast because of bug https://github.com/bombshell-dev/clack/issues/234
 						{ results }: { results: Record<string, any> },
 					) =>
-						select<typeof StageAccent.Type>({
+						select<typeof Accent.Type>({
 							message: "Choose an accent color",
 							options: scaleNames.map((name) => {
 								const radixColorKey =
@@ -84,13 +77,13 @@ export const run = Effect.gen(function* () {
 								return {
 									value: name,
 									label: `${name} ${ansi}■\x1b[0m`,
-								} as SelectOption<typeof StageAccent.Type>;
+								} as SelectOption<typeof Accent.Type>;
 							}),
 							initialValue: "indigo" as const,
 						}),
 
 					tone: () =>
-						select<typeof StageTone.Type>({
+						select<typeof Tone.Type>({
 							message: "Choose a tone",
 							initialValue: "balanced",
 							options: [
@@ -101,7 +94,7 @@ export const run = Effect.gen(function* () {
 						}),
 
 					components: () =>
-						multiselect<(typeof StageComponents.Type)[number]>({
+						multiselect<(typeof Components.Type)[number]>({
 							message: "Component overrides (all selected by default)",
 							initialValues: [
 								"hyprland",
@@ -140,7 +133,7 @@ export const run = Effect.gen(function* () {
 								.join(" ") as string,
 							validate: (value) =>
 								pipe(
-									Schema.decodeUnknownOption(StageIdentityName)(value),
+									Schema.decodeUnknownOption(IdentityName)(value),
 									Option.match({
 										onNone: () => "Name must be a non-empty string",
 										onSome: () => undefined,
@@ -159,13 +152,21 @@ export const run = Effect.gen(function* () {
 
 	const slug = slugify(name);
 
-	const identity = yield* Schema.encode(StageIdentity)({
+	const config = yield* Schema.encode(ThemeConfig)({
 		name,
 		slug,
 		mode,
+		basePalette,
+		accent,
+		tone,
+		components,
 	});
 
-	console.log({ identity, basePalette, accent, tone, components });
+	console.log(config);
+
+	const omarchy = yield* mapPaletteToOmarchy(config);
+
+	console.log(omarchy);
 	outro(`You're all set!`);
 });
 
