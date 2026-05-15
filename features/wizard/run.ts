@@ -1,7 +1,7 @@
 import type { Option as SelectOption } from "@clack/prompts";
 import { cancel, group, intro, multiselect, outro, select, text } from "@clack/prompts";
 import * as RadixColors from "@radix-ui/colors";
-import { Effect, Option, pipe, Schema } from "effect";
+import { Config, Effect, Option, pipe, Schema } from "effect";
 import { grayScaleNames, scaleNames } from "../map/generate-radix-colors";
 import {
   type Accent,
@@ -12,11 +12,15 @@ import {
   UserInput,
   type Tone,
 } from "./shared";
+import { Path } from "@effect/platform";
 
 export const run = Effect.gen(function* () {
   intro(
     `All colors are generated from Radix Colors.\nSee https://www.radix-ui.com/colors for accurate color previews.`,
   );
+
+  const path = yield* Path.Path;
+  const homeDir = yield* Config.string("HOME");
 
   const promptInputs = yield* Effect.promise(() =>
     group(
@@ -110,16 +114,7 @@ export const run = Effect.gen(function* () {
         ) =>
           text({
             message: "Name your theme",
-            initialValue: [
-              "Radix",
-              [results.accent, results.basePalette]
-                .filter((s): s is NonNullable<typeof s> => !!s)
-                // biome-ignore lint/style/noNonNullAssertion: nullable and empty values are filtered out
-                .map((s) => s[0]!.toUpperCase() + s.slice(1))
-                .join("/"),
-              results.tone,
-              results.mode,
-            ]
+            initialValue: ["Radix", results.accent, results.basePalette, results.tone, results.mode]
               .filter((s): s is string => !!s)
               // biome-ignore lint/style/noNonNullAssertion: nullable and empty values are filtered out
               .map((s) => s[0]!.toUpperCase() + s.slice(1))
@@ -137,7 +132,7 @@ export const run = Effect.gen(function* () {
         themeDirectoryPath: () =>
           text({
             message: "What is your Omarchy themes directory path?",
-            initialValue: "~/.config/omarchy/themes",
+            initialValue: path.resolve(homeDir, ".config/omarchy/themes"),
           }),
       },
       {
