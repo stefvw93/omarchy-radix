@@ -46,13 +46,12 @@ export const run = Effect.gen(function* () {
               const radixColorKey =
                 `${name}${results.mode === "dark" ? "Dark" : ""}` as keyof typeof RadixColors;
               const radixColor = RadixColors[radixColorKey];
-              const shades = Object.values(radixColor);
-              // biome-ignore lint/style/noNonNullAssertion: it exists because it's a Radix color scale with 12 shades
-              const hex = shades[0]!;
-              const ansi = hexToAnsi(hex);
+              const preview = Object.values(radixColor)
+                .map((shade) => hexToAnsi(shade) + "■\x1b[0m")
+                .join("");
               return {
                 value: name,
-                label: `${name} ${ansi}■\x1b[0m`,
+                label: `${name} ${preview}`,
               } as SelectOption<typeof BasePalette.Type>;
             }),
             initialValue: "slate" as const,
@@ -72,13 +71,12 @@ export const run = Effect.gen(function* () {
               const radixColorKey =
                 `${name}${results.mode === "dark" ? "Dark" : ""}` as keyof typeof RadixColors;
               const radixColor = RadixColors[radixColorKey];
-              const shades = Object.values(radixColor);
-              // biome-ignore lint/style/noNonNullAssertion: it exists because it's a Radix color scale with 12 shades
-              const hex = shades[8]!;
-              const ansi = hexToAnsi(hex);
+              const preview = Object.values(radixColor)
+                .map((shade) => hexToAnsi(shade) + "■\x1b[0m")
+                .join("");
               return {
                 value: name,
-                label: `${name} ${ansi}■\x1b[0m`,
+                label: `${name} ${preview}`,
               } as SelectOption<typeof Accent.Type>;
             }),
             initialValue: "indigo" as const,
