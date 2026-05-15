@@ -1,5 +1,4 @@
 import { expect, test } from "bun:test";
-import { emitColorsToml } from "./emit-colors-toml";
 import { Effect, Either, pipe } from "effect";
 import { MainTest, UserInputProvider } from "../wizard/shared";
 import { BunContext } from "@effect/platform-bun";

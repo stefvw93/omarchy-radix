@@ -1,4 +1,4 @@
-import { FileSystem, Path } from "@effect/platform";
+import { Path } from "@effect/platform";
 import { Effect, Data } from "effect";
 import { UserInputProvider } from "../wizard/shared";
 
