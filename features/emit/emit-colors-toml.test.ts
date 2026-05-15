@@ -1,9 +1,10 @@
 import { test } from "bun:test";
 import { emitColorsToml } from "./emit-colors-toml";
-import { Effect } from "effect";
+import { Effect, pipe } from "effect";
 import { MainTest } from "../wizard/shared";
+import { BunContext } from "@effect/platform-bun";
 
-test("should emit colors in toml format", () => {
-  const program = Effect.provide(emitColorsToml, MainTest);
-  return Effect.runPromise(program);
-});
+test("should emit colors in toml format", () =>
+  Effect.runPromise(
+    pipe(emitColorsToml, Effect.provide(MainTest), Effect.provide(BunContext.layer)),
+  ));

@@ -7,6 +7,7 @@ import {
   NormalizedColorScaleFromRadixColorScale,
 } from "../map/shared";
 import { run } from "./run";
+import { FileSystem } from "@effect/platform";
 
 export const Mode = Schema.Literal("dark", "light");
 export const BasePalette = Schema.Literal(...grayScaleNames);
@@ -15,6 +16,7 @@ export const Tone = Schema.Literal("calm", "balanced", "high-contrast");
 export const Components = Schema.Array(Schema.Literal("waybar", "walker", "hyprland", "hyprlock"));
 export const IdentityName = Schema.String.pipe(Schema.nonEmptyString());
 export const IdentitySlug = Schema.String.pipe(Schema.nonEmptyString());
+export const ThemeDirectoryPath = Schema.String.pipe(Schema.nonEmptyString());
 
 export const UserInput = Schema.Struct({
   name: IdentityName,
@@ -24,6 +26,7 @@ export const UserInput = Schema.Struct({
   accent: Accent,
   tone: Tone,
   components: Components,
+  themeDirectoryPath: ThemeDirectoryPath,
 });
 
 export class UserInputProvider extends Context.Tag(
@@ -36,15 +39,30 @@ export const UserInputLive = Layer.effect(
   }),
 );
 
-const UserInputTest = Layer.succeed(UserInputProvider, {
-  name: "My Theme",
-  slug: "my-theme",
-  mode: "dark",
-  basePalette: "slate",
-  accent: "indigo",
-  tone: "balanced",
-  components: [],
-});
+const UserInputTest = Layer.scoped(
+  UserInputProvider,
+  Effect.gen(function* () {
+    const fs = yield* FileSystem.FileSystem;
+
+    const tempDir = yield* fs.makeTempDirectoryScoped({
+      prefix: "omarchy-radix-test-",
+    });
+
+    const mockInput = {
+      name: "My Theme",
+      slug: "my-theme",
+      mode: "dark",
+      basePalette: "slate",
+      accent: "indigo",
+      tone: "balanced",
+      components: [],
+      themeDirectoryPath: tempDir,
+    } as const;
+
+    yield* Effect.log(`Created mock user input with temporary directory at ${tempDir}`);
+    return mockInput;
+  }),
+);
 
 const ColorScalesLive = Layer.effect(
   ColorScalesProvider,

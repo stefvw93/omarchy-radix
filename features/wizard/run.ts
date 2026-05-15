@@ -18,7 +18,7 @@ export const run = Effect.gen(function* () {
     `All colors are generated from Radix Colors.\nSee https://www.radix-ui.com/colors for accurate color previews.`,
   );
 
-  const { mode, basePalette, accent, tone, components, name } = yield* Effect.promise(() =>
+  const promptInputs = yield* Effect.promise(() =>
     group(
       {
         mode: () =>
@@ -133,6 +133,12 @@ export const run = Effect.gen(function* () {
                 }),
               ),
           }),
+
+        themeDirectoryPath: () =>
+          text({
+            message: "What is your Omarchy themes directory path?",
+            initialValue: "~/.config/omarchy/themes",
+          }),
       },
       {
         onCancel() {
@@ -143,16 +149,9 @@ export const run = Effect.gen(function* () {
     ),
   );
 
-  const slug = slugify(name);
-
   const userInput = yield* Schema.encode(UserInput)({
-    name,
-    slug,
-    mode,
-    basePalette,
-    accent,
-    tone,
-    components,
+    ...promptInputs,
+    slug: slugify(promptInputs.name),
   });
 
   console.log(userInput);
