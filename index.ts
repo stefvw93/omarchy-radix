@@ -1,15 +1,18 @@
-import { Effect, pipe } from "effect";
+import { Config, Effect, pipe } from "effect";
 import { BunRuntime, BunContext } from "@effect/platform-bun";
 import { LifeCycle, LifeCycleLive, MainLive } from "./features/wizard/shared";
 import { emitColorsToml } from "./features/emit/emit-colors-toml";
 import { emitBackgrounds } from "./features/emit/emit-backgrounds";
 import { commitTheme, prepareTarget } from "./features/emit/emit-theme-dir";
-import { FileSystem } from "@effect/platform";
+import { FileSystem, Path } from "@effect/platform";
 
 const main = pipe(
   Effect.gen(function* () {
     const fs = yield* FileSystem.FileSystem;
-    const omarchyVersion = yield* fs.readFileString(`${process.env.OMARCHY_PATH}/version`);
+    const path = yield* Path.Path;
+    const omarchyVersion = yield* fs.readFileString(
+      path.resolve(yield* Config.string("OMARCHY_PATH"), "version"),
+    );
 
     if (process.env.NODE_ENV === "test") {
       yield* Effect.log("Running in test mode");
