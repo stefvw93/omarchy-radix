@@ -11,8 +11,20 @@ import {
   type Mode,
   UserInput,
   type Tone,
+  SUPPORTED_COMPONENTS,
+  LifeCycle,
 } from "./shared";
 import { Path } from "@effect/platform";
+import pkg from "../../package.json";
+import {
+  promptAccent,
+  promptBasePalette,
+  promptComponents,
+  promptMode,
+  promptThemeDirectoryPath,
+  promptTone,
+} from "./prompts";
+import { hexToAnsi } from "../../utils/hex-to-ansi";
 
 export const run = Effect.gen(function* () {
   intro(
@@ -21,146 +33,47 @@ export const run = Effect.gen(function* () {
 
   const path = yield* Path.Path;
   const homeDir = yield* Config.string("HOME");
+  const { onCancel: handleCancel } = yield* LifeCycle;
 
-  const promptInputs = yield* Effect.promise(() =>
+  const promptInputs = yield* Effect.async<Record<string, unknown>, Error>((resume) => {
     group(
       {
-        mode: () =>
-          select<typeof Mode.Type>({
-            message: "Choose a mode",
-            options: [{ value: "dark" }, { value: "light" }],
-            initialValue: "dark" as const,
-          }),
-
-        basePalette: (
-          // biome-ignore lint/suspicious/noExplicitAny: have to type cast because of bug https://github.com/bombshell-dev/clack/issues/234
-          {
-            results,
-          }: {
-            results: Record<string, any>;
-          },
-        ) =>
-          select<typeof BasePalette.Type>({
-            message: "Choose a base palette",
-            options: grayScaleNames.map((name) => {
-              const radixColorKey =
-                `${name}${results.mode === "dark" ? "Dark" : ""}` as keyof typeof RadixColors;
-              const radixColor = RadixColors[radixColorKey];
-              const preview = Object.values(radixColor)
-                .map((shade) => hexToAnsi(shade) + "■\x1b[0m")
-                .join("");
-              return {
-                value: name,
-                label: `${name} ${preview}`,
-              } as SelectOption<typeof BasePalette.Type>;
-            }),
-            initialValue: "slate" as const,
-          }),
-
-        accent: (
-          // biome-ignore lint/suspicious/noExplicitAny: have to type cast because of bug https://github.com/bombshell-dev/clack/issues/234
-          {
-            results,
-          }: {
-            results: Record<string, any>;
-          },
-        ) =>
-          select<typeof Accent.Type>({
-            message: "Choose an accent color",
-            options: scaleNames.map((name) => {
-              const radixColorKey =
-                `${name}${results.mode === "dark" ? "Dark" : ""}` as keyof typeof RadixColors;
-              const radixColor = RadixColors[radixColorKey];
-              const preview = Object.values(radixColor)
-                .map((shade) => hexToAnsi(shade) + "■\x1b[0m")
-                .join("");
-              return {
-                value: name,
-                label: `${name} ${preview}`,
-              } as SelectOption<typeof Accent.Type>;
-            }),
-            initialValue: "indigo" as const,
-          }),
-
-        tone: () =>
-          select<typeof Tone.Type>({
-            message: "Choose a tone",
-            initialValue: "balanced",
-            options: [{ value: "calm" }, { value: "balanced" }, { value: "high-contrast" }],
-          }),
-
-        components: () =>
-          multiselect<(typeof Components.Type)[number]>({
-            message: "Component overrides (all selected by default)",
-            initialValues: ["hyprland", "hyprlock", "waybar", "walker"] as const,
-            options: [
-              { value: "hyprland" as const },
-              { value: "hyprlock" as const },
-              { value: "waybar" as const },
-              { value: "walker" as const },
-            ],
-            required: true,
-          }),
-
-        name: (
-          // biome-ignore lint/suspicious/noExplicitAny: have to type cast because of bug https://github.com/bombshell-dev/clack/issues/234
-          {
-            results,
-          }: {
-            results: Record<string, any>;
-          },
-        ) =>
-          text({
-            message: "Name your theme",
-            initialValue: ["Radix", results.accent, results.basePalette, results.tone, results.mode]
-              .filter((s): s is string => !!s)
-              // biome-ignore lint/style/noNonNullAssertion: nullable and empty values are filtered out
-              .map((s) => s[0]!.toUpperCase() + s.slice(1))
-              .join(" ") as string,
-            validate: (value) =>
-              pipe(
-                Schema.decodeUnknownOption(IdentityName)(value),
-                Option.match({
-                  onNone: () => "Name must be a non-empty string",
-                  onSome: () => undefined,
-                }),
-              ),
-          }),
-
-        themeDirectoryPath: () =>
-          text({
-            message: "What is your Omarchy themes directory path?",
-            initialValue: path.resolve(homeDir, ".config/omarchy/themes"),
-          }),
+        mode: promptMode,
+        basePalette: promptBasePalette,
+        accent: promptAccent,
+        tone: promptTone,
+        components: promptComponents,
+        themeDirectoryPath: promptThemeDirectoryPath(
+          path.resolve(homeDir, ".config/omarchy/themes"),
+        ),
       },
       {
         onCancel() {
-          cancel("Operation cancelled.");
-          process.exit(0);
+          resume(Effect.zipRight(handleCancel, Effect.interrupt));
         },
       },
-    ),
-  );
-
-  const userInput = yield* Schema.encode(UserInput)({
-    ...promptInputs,
-    slug: slugify(promptInputs.name),
+    ).then((results) => resume(Effect.succeed(results)));
   });
 
-  console.log(userInput);
+  const userInput = yield* Schema.encodeUnknown(UserInput.pipe(Schema.omit("slug")))({
+    ...promptInputs,
+  });
+
+  const slug = slugify(
+    [pkg.name, userInput.accent, userInput.basePalette, userInput.tone, userInput.mode].join("-"),
+  );
+
+  const compiledInput: typeof UserInput.Type = {
+    ...userInput,
+    slug,
+  };
+
+  console.log(compiledInput);
 
   outro(`You're all set!`);
 
-  return userInput;
+  return compiledInput;
 });
-
-const hexToAnsi = (hex: string) => {
-  const h = hex.replace(/^#/, "");
-  const r = parseInt(h.slice(0, 2), 16);
-  const g = parseInt(h.slice(2, 4), 16);
-  const b = parseInt(h.slice(4, 6), 16);
-  return `[38;2;${r};${g};${b}m`;
-};
 
 const slugify = (str: string) =>
   str

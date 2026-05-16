@@ -1,8 +1,9 @@
 import { Context, identity, ParseResult, pipe, Schema } from "effect";
 import type { Mutable } from "effect/Types";
+import pkg from "../../package.json";
 
 export class ColorScalesProvider extends Context.Tag(
-  "omarch-radix/features/colors/ColorScalesProvider",
+  `${pkg.name}/features/colors/ColorScalesProvider`,
 )<
   ColorScalesProvider,
   {

@@ -8,18 +8,53 @@ import {
 } from "../map/shared";
 import { run } from "./run";
 import { FileSystem } from "@effect/platform";
+import pkg from "../../package.json";
+import { cancel } from "@clack/prompts";
+
+// TODO: support all of these
+export const SUPPORTED_COMPONENTS = [
+  // "waybar",
+  "walker",
+  // "hyprland",
+  // "hyprlock",
+  // "swayosd",
+  // "mako",
+] as const;
 
 export const Mode = Schema.Literal("dark", "light");
 export const BasePalette = Schema.Literal(...grayScaleNames);
 export const Accent = Schema.Literal(...scaleNames);
 export const Tone = Schema.Literal("calm", "balanced", "high-contrast");
-export const Components = Schema.Array(Schema.Literal("waybar", "walker", "hyprland", "hyprlock"));
+export const Components = Schema.Array(Schema.Literal(...SUPPORTED_COMPONENTS));
 export const IdentityName = Schema.String.pipe(Schema.nonEmptyString());
 export const IdentitySlug = Schema.String.pipe(Schema.nonEmptyString());
 export const ThemeDirectoryPath = Schema.String.pipe(Schema.nonEmptyString());
 
+export class LifeCycle extends Context.Tag(`${pkg.name}/features/wizard/LifeCycle`)<
+  LifeCycle,
+  {
+    onCancel: Effect.Effect<void>;
+  }
+>() {}
+
+export const LifeCycleLive = Layer.effect(
+  LifeCycle,
+  Effect.succeed({
+    onCancel: Effect.sync(() => {
+      cancel("Operation cancelled.");
+      process.exit(0);
+    }),
+  }),
+);
+
+export const LifeCycleTest = Layer.effect(
+  LifeCycle,
+  Effect.succeed({
+    onCancel: Effect.void,
+  }),
+);
+
 export const UserInput = Schema.Struct({
-  name: IdentityName,
   slug: IdentitySlug,
   mode: Mode,
   basePalette: BasePalette,
@@ -29,9 +64,11 @@ export const UserInput = Schema.Struct({
   themeDirectoryPath: ThemeDirectoryPath,
 });
 
-export class UserInputProvider extends Context.Tag(
-  "omarch-radix/features/wizard/UserInputProvider",
-)<UserInputProvider, typeof UserInput.Type>() {}
+export class UserInputProvider extends Context.Tag(`${pkg.name}/features/wizard/UserInputProvider`)<
+  UserInputProvider,
+  typeof UserInput.Type
+>() {}
+
 export const UserInputLive = Layer.effect(
   UserInputProvider,
   Effect.gen(function* () {
@@ -92,6 +129,7 @@ const ColorInputTest = Layer.merge(ColorScalesLive, UserInputTest);
 export const MainLive = ColorScalesLive.pipe(
   Layer.provide(ColorInputLive),
   Layer.provideMerge(UserInputLive),
+  Layer.provide(LifeCycleLive),
 );
 
 export const MainTest = ColorScalesLive.pipe(
