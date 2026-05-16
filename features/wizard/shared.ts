@@ -5,7 +5,7 @@ import { RadixColorScale, NormalizedColorScaleFromRadixColorScale } from "../map
 import { run } from "./run";
 import { FileSystem } from "@effect/platform";
 import pkg from "../../package.json";
-import { cancel, intro, outro } from "@clack/prompts";
+import { cancel, confirm, intro, isCancel, outro } from "@clack/prompts";
 
 // TODO: support all of these
 export const SUPPORTED_COMPONENTS = [
@@ -52,6 +52,33 @@ export const LifeCycleLive = Layer.effect(
     }),
   }),
 );
+
+export class OverwriteConfirm extends Context.Tag(`${pkg.name}/features/wizard/OverwriteConfirm`)<
+  OverwriteConfirm,
+  (themeOutputDir: string) => Effect.Effect<boolean>
+>() {}
+
+export const OverwriteConfirmLive = Layer.effect(
+  OverwriteConfirm,
+  Effect.gen(function* () {
+    const { onCancel } = yield* LifeCycle;
+    return (themeOutputDir: string) =>
+      Effect.async<boolean>((resume) => {
+        confirm({
+          message: `The directory ${themeOutputDir} already exists. Do you want to overwrite it?`,
+          initialValue: false,
+        }).then((value) => {
+          if (isCancel(value)) {
+            return resume(Effect.zipRight(onCancel, Effect.interrupt));
+          }
+          resume(Effect.succeed(value));
+        });
+      });
+  }),
+);
+
+export const makeOverwriteConfirmTest = (answer: boolean) =>
+  Layer.succeed(OverwriteConfirm, () => Effect.succeed(answer));
 
 export const UserInput = Schema.Struct({
   slug: IdentitySlug,
@@ -138,6 +165,7 @@ const ColorInputTest = Layer.merge(ColorScalesLive, UserInputTest);
 export const MainLive = ColorScalesLive.pipe(
   Layer.provide(ColorInputLive),
   Layer.provideMerge(UserInputLive),
+  Layer.provideMerge(OverwriteConfirmLive),
   Layer.provideMerge(LifeCycleLive),
 );
 
