@@ -61,7 +61,9 @@ test("commitTheme replaces an existing target directory", () =>
       yield* fs.writeFileString(path.join(themeDirectory, "stale.txt"), "stale");
       yield* fs.writeFileString(path.join(stagingDirectory, "fresh.txt"), "fresh");
 
-      yield* prepareTarget.pipe(Effect.provide(Layer.succeed(OverwritePermission, true)));
+      yield* prepareTarget.pipe(
+        Effect.provide(Layer.succeed(OverwritePermission, () => Effect.succeed(true))),
+      );
       yield* commitTheme;
 
       expect(yield* fs.exists(path.join(themeDirectory, "stale.txt"))).toBe(false);
@@ -81,7 +83,9 @@ test("prepareTarget interrupts and leaves the target intact when overwrite is de
       yield* fs.writeFileString(stale, "stale");
 
       const exit = yield* Effect.exit(
-        prepareTarget.pipe(Effect.provide(Layer.succeed(OverwritePermission, false))),
+        prepareTarget.pipe(
+          Effect.provide(Layer.succeed(OverwritePermission, () => Effect.succeed(false))),
+        ),
       );
       expect(Exit.isInterrupted(exit)).toBe(true);
       expect(yield* fs.exists(stale)).toBe(true);

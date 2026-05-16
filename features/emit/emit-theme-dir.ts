@@ -10,7 +10,7 @@ export const prepareTarget = Effect.gen(function* () {
   if (yield* fs.exists(themeDirectory)) {
     const overwritePermission = yield* OverwritePermission;
 
-    if (!overwritePermission) {
+    if (!(yield* overwritePermission())) {
       return yield* Effect.zipRight(onCancel, Effect.interrupt);
     }
   }

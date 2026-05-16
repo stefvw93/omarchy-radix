@@ -152,7 +152,7 @@ const ColorScalesLive = Layer.effect(
 
 export class OverwritePermission extends Context.Tag(
   `${pkg.name}/features/wizard/OverwritePermission`,
-)<OverwritePermission, boolean>() {}
+)<OverwritePermission, () => Effect.Effect<boolean>>() {}
 
 export const OverwritePermissionLive = Layer.effect(
   OverwritePermission,
@@ -160,17 +160,18 @@ export const OverwritePermissionLive = Layer.effect(
     const { onCancel } = yield* LifeCycle;
     const { themeDirectory } = yield* Output;
 
-    const overwritePermission = yield* Effect.async<boolean>((resume) => {
-      confirm({
-        message: `The directory ${themeDirectory} already exists. Do you want to overwrite it?`,
-        initialValue: false,
-      }).then((value) => {
-        if (isCancel(value)) {
-          return resume(Effect.zipRight(onCancel, Effect.interrupt));
-        }
-        resume(Effect.succeed(value));
+    const overwritePermission = () =>
+      Effect.async<boolean>((resume) => {
+        confirm({
+          message: `The directory ${themeDirectory} already exists. Do you want to overwrite it?`,
+          initialValue: false,
+        }).then((value) => {
+          if (isCancel(value)) {
+            return resume(Effect.zipRight(onCancel, Effect.interrupt));
+          }
+          resume(Effect.succeed(value));
+        });
       });
-    });
 
     return overwritePermission;
   }),
