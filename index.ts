@@ -18,18 +18,18 @@ const main = pipe(
     yield* Effect.log(`Using Omarchy v${omarchyVersion}`);
 
     const { onStart, onComplete } = yield* LifeCycle;
-    yield* onStart;
+    const emitTheme = Effect.all([emitColorsToml, emitBackgrounds], { concurrency: "unbounded" });
 
     yield* pipe(
-      prepareTarget,
-      Effect.andThen(() =>
-        Effect.all([emitColorsToml, emitBackgrounds], { concurrency: "unbounded" }),
-      ),
+      onStart,
+      Effect.andThen(prepareTarget),
+      Effect.andThen(emitTheme),
       Effect.andThen(commitTheme),
+      Effect.andThen(onComplete),
       Effect.provide(MainLive),
     );
 
-    yield* onComplete;
+    process.exit(0);
   }),
   Effect.scoped,
   Effect.provide(LifeCycleLive),
