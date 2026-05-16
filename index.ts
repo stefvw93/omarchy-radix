@@ -3,7 +3,7 @@ import { BunRuntime, BunContext } from "@effect/platform-bun";
 import { LifeCycle, MainLive } from "./features/wizard/shared";
 import { emitColorsToml } from "./features/emit/emit-colors-toml";
 import { emitBackgrounds } from "./features/emit/emit-backgrounds";
-import { emitThemeDir } from "./features/emit/emit-theme-dir";
+import { commitTheme, prepareTarget } from "./features/emit/emit-theme-dir";
 
 const main = pipe(
   Effect.gen(function* () {
@@ -19,12 +19,14 @@ const main = pipe(
 
     yield* onStart;
 
-    yield* emitThemeDir;
+    yield* prepareTarget;
     yield* emitColorsToml;
     yield* emitBackgrounds;
+    yield* commitTheme;
 
     yield* onComplete;
   }),
+  Effect.scoped,
   Effect.provide(MainLive),
   Effect.provide(BunContext.layer),
 );

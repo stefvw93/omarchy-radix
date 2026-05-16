@@ -1,6 +1,6 @@
 import { Path } from "@effect/platform";
 import { Effect } from "effect";
-import { UserInputProvider } from "../wizard/shared";
+import { StagingDirectory, UserInputProvider } from "../wizard/shared";
 
 export const recordToLines = <T extends Record<string, unknown>>(
   record: T,
@@ -13,4 +13,8 @@ export const resolveThemeOutputDirectory = Effect.gen(function* () {
   const userInput = yield* yield* UserInputProvider;
   const resolvedDir = path.resolve(userInput.themeDirectoryPath, userInput.slug);
   return resolvedDir;
+});
+
+export const resolveStagingDirectory = Effect.gen(function* () {
+  return yield* StagingDirectory;
 });

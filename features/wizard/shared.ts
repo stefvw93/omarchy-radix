@@ -132,6 +132,22 @@ const UserInputTest = Layer.scoped(
   ),
 );
 
+export class StagingDirectory extends Context.Tag(`${pkg.name}/features/wizard/StagingDirectory`)<
+  StagingDirectory,
+  string
+>() {}
+
+export const StagingDirectoryLive = Layer.scoped(
+  StagingDirectory,
+  Effect.gen(function* () {
+    const fs = yield* FileSystem.FileSystem;
+    const userInput = yield* yield* UserInputProvider;
+    return yield* fs.makeTempDirectoryScoped({
+      prefix: `${userInput.slug}-`,
+    });
+  }),
+);
+
 export class ColorScalesProvider extends Context.Tag(
   `${pkg.name}/features/colors/ColorScalesProvider`,
 )<ColorScalesProvider, Effect.Effect.Success<typeof colorScalesCached>>() {}
@@ -164,6 +180,7 @@ const ColorInputTest = Layer.merge(ColorScalesLive, UserInputTest);
 
 export const MainLive = ColorScalesLive.pipe(
   Layer.provide(ColorInputLive),
+  Layer.provideMerge(StagingDirectoryLive),
   Layer.provideMerge(UserInputLive),
   Layer.provideMerge(OverwriteConfirmLive),
   Layer.provideMerge(LifeCycleLive),
@@ -171,5 +188,6 @@ export const MainLive = ColorScalesLive.pipe(
 
 export const MainTest = ColorScalesLive.pipe(
   Layer.provide(ColorInputTest),
+  Layer.provideMerge(StagingDirectoryLive),
   Layer.provideMerge(UserInputTest),
 );
