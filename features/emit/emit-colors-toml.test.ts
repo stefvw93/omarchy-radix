@@ -14,7 +14,7 @@ test("should emit colors in toml format", () =>
         yield* commitTheme;
         const fs = yield* FileSystem.FileSystem;
         const path = yield* Path.Path;
-        const userInput = yield* yield* UserInputProvider;
+        const userInput = yield* UserInputProvider;
         const exists = yield* Effect.either(
           fs.exists(path.resolve(userInput.themeDirectoryPath, userInput.slug, "colors.toml")),
         );

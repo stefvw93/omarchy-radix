@@ -26,6 +26,29 @@ export const promptMode: PromptFactory<typeof Mode.Type> = () =>
     initialValue: "dark" as const,
   });
 
+const DARK_ACCENTS = new Set<typeof Accent.Type>([
+  "brown",
+  "orange",
+  "tomato",
+  "red",
+  "ruby",
+  "crimson",
+  "pink",
+  "plum",
+  "purple",
+  "violet",
+  "iris",
+  "indigo",
+  "blue",
+  "cyan",
+  "teal",
+  "jade",
+  "green",
+  "grass",
+]);
+
+const LIGHT_ACCENTS = new Set<typeof Accent.Type>(["sky", "mint", "lime", "yellow", "amber"]);
+
 export const promptBasePalette: PromptFactory<typeof BasePalette.Type> = ({ results }) => {
   if (!results.mode) {
     throw new PromptError({ message: "Mode must be selected before base palette." });
@@ -33,12 +56,13 @@ export const promptBasePalette: PromptFactory<typeof BasePalette.Type> = ({ resu
 
   return p.select({
     message: "Choose a base palette",
-    initialValue: "slate" as const,
+    initialValue: "gray" as const,
     options: grayScaleNames.map((name) => {
       const radixColorKey =
         `${name}${results.mode === "dark" ? "Dark" : ""}` as keyof typeof RadixColors;
       const radixColor = RadixColors[radixColorKey];
       const preview = Object.values(radixColor)
+        .slice(7, 10) // show only a sub set of the shades for preview
         .map((shade) => hexToAnsi(shade) + "■\x1b[0m")
         .join("");
 
@@ -55,21 +79,26 @@ export const promptAccent: PromptFactory<typeof Accent.Type> = ({ results }) => 
     throw new PromptError({ message: "Mode must be selected before accent color." });
   }
 
-  return p.select({
-    message: "Choose an accent color",
-    initialValue: "indigo" as const,
-    options: scaleNames.map((name) => {
+  const options = scaleNames
+    .filter((name) => (results.mode === "dark" ? DARK_ACCENTS.has(name) : LIGHT_ACCENTS.has(name)))
+    .map((name) => {
       const radixColorKey =
         `${name}${results.mode === "dark" ? "Dark" : ""}` as keyof typeof RadixColors;
       const radixColor = RadixColors[radixColorKey];
       const preview = Object.values(radixColor)
+        .slice(7, 10) // show only a sub set of the shades for preview
         .map((shade) => hexToAnsi(shade) + "■\x1b[0m")
         .join("");
       return {
         value: name,
         label: `${name} ${preview}`,
       } as p.Option<typeof Accent.Type>;
-    }),
+    });
+
+  return p.select({
+    message: "Choose an accent color",
+    initialValue: "indigo" as const,
+    options,
   });
 };
 

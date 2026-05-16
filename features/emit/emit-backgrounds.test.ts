@@ -14,7 +14,7 @@ test("should emit backgrounds", () =>
         yield* commitTheme;
         const fs = yield* FileSystem.FileSystem;
         const path = yield* Path.Path;
-        const userInput = yield* yield* UserInputProvider;
+        const userInput = yield* UserInputProvider;
 
         for (const asset of BACKGROUND_ASSETS) {
           const exists = yield* Effect.either(

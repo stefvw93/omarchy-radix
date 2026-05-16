@@ -1,17 +1,11 @@
 import * as RadixColors from "@radix-ui/colors";
-import {
-  ColorsToml,
-  HexColorFromString,
-  NormalizedColorScaleFromRadixColorScale,
-  OmarchyMapping,
-  RadixColorScale,
-} from "./shared";
+import { ColorsToml, HexColorFromString } from "./shared";
 import { ColorScalesProvider, UserInputProvider } from "../wizard/shared";
 import { Effect, Schema } from "effect";
 
 export const mapColorsToToml = Effect.gen(function* () {
-  const { base, accent } = yield* yield* ColorScalesProvider;
-  const userInput = yield* yield* UserInputProvider;
+  const { base, accent } = yield* ColorScalesProvider;
+  const userInput = yield* UserInputProvider;
   const hex = Schema.decode(HexColorFromString);
   const dark = userInput.mode === "dark";
 
@@ -34,7 +28,8 @@ export const mapColorsToToml = Effect.gen(function* () {
     cursor: base[12],
     selection_background: base[4],
     selection_foreground: base[12],
-    accent: accent[9],
+    // accent: accent[9],
+    accent: base[9],
     color0: base[3],
     color7: base[11],
     color8: base[8],
@@ -56,32 +51,4 @@ export const mapColorsToToml = Effect.gen(function* () {
   });
 
   return colorsToml;
-});
-
-export const mapColorsToOmarchy = Effect.gen(function* () {
-  const { basePalette, accent, mode } = yield* yield* UserInputProvider;
-
-  const parseColorScale = Schema.encodeUnknown(RadixColorScale);
-  const toNormalized = Schema.decode(NormalizedColorScaleFromRadixColorScale);
-  const getRadixKey = (palette: string) =>
-    `${palette}${mode === "dark" ? "Dark" : ""}` as keyof typeof RadixColors;
-
-  const baseRadixColorScale = yield* parseColorScale(RadixColors[getRadixKey(basePalette)]);
-  const normalizedBasePaletteColorScale = yield* toNormalized(baseRadixColorScale);
-  const accentRadixColorScale = yield* parseColorScale(RadixColors[getRadixKey(accent)]);
-  const normalizedAccentColorScale = yield* toNormalized(accentRadixColorScale);
-
-  const colorsToml = yield* mapColorsToToml.pipe(
-    Effect.provideService(
-      ColorScalesProvider,
-      Effect.succeed({
-        base: normalizedBasePaletteColorScale,
-        accent: normalizedAccentColorScale,
-      }),
-    ),
-  );
-
-  return yield* Schema.decode(OmarchyMapping)({
-    colorsToml,
-  });
 });

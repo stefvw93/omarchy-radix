@@ -1,6 +1,6 @@
 import { Effect } from "effect";
 import { FileSystem, Path } from "@effect/platform";
-import { resolveStagingDirectory } from "./shared";
+import { Output } from "../wizard/shared";
 
 export const BACKGROUND_ASSETS: readonly string[] = [
   "assets/backgrounds/liquid-art-paint-7680x4320-25904.jpg",
@@ -9,8 +9,8 @@ export const BACKGROUND_ASSETS: readonly string[] = [
 export const emitBackgrounds = Effect.gen(function* () {
   const fs = yield* FileSystem.FileSystem;
   const path = yield* Path.Path;
-  const stagingDir = yield* resolveStagingDirectory;
-  const backgroundsDir = path.resolve(stagingDir, "backgrounds");
+  const { stagingDirectory } = yield* Output;
+  const backgroundsDir = path.resolve(stagingDirectory, "backgrounds");
 
   yield* Effect.log(`Emitting backgrounds to staging at ${backgroundsDir}`);
   yield* fs.makeDirectory(backgroundsDir, { recursive: true });

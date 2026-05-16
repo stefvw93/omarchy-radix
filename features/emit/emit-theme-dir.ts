@@ -1,16 +1,14 @@
 import { Effect } from "effect";
 import { FileSystem, Path } from "@effect/platform";
-import { resolveStagingDirectory, resolveThemeOutputDirectory } from "./shared";
-import { LifeCycle, OverwriteConfirm } from "../wizard/shared";
+import { LifeCycle, Output, OverwritePermission } from "../wizard/shared";
 
 export const prepareTarget = Effect.gen(function* () {
   const fs = yield* FileSystem.FileSystem;
   const { onCancel } = yield* LifeCycle;
-  const confirmOverwrite = yield* OverwriteConfirm;
-  const themeOutputDir = yield* resolveThemeOutputDirectory;
+  const { themeDirectory } = yield* Output;
 
-  if (yield* fs.exists(themeOutputDir)) {
-    const overwritePermission = yield* confirmOverwrite(themeOutputDir);
+  if (yield* fs.exists(themeDirectory)) {
+    const overwritePermission = yield* OverwritePermission;
 
     if (!overwritePermission) {
       return yield* Effect.zipRight(onCancel, Effect.interrupt);
@@ -21,14 +19,14 @@ export const prepareTarget = Effect.gen(function* () {
 export const commitTheme = Effect.gen(function* () {
   const fs = yield* FileSystem.FileSystem;
   const path = yield* Path.Path;
-  const themeOutputDir = yield* resolveThemeOutputDirectory;
-  const stagingDir = yield* resolveStagingDirectory;
+  const { stagingDirectory, themeDirectory } = yield* Output;
 
-  if (yield* fs.exists(themeOutputDir)) {
-    yield* fs.remove(themeOutputDir, { recursive: true });
+  if (yield* fs.exists(themeDirectory)) {
+    yield* fs.remove(themeDirectory, { recursive: true });
   }
-  yield* fs.makeDirectory(path.dirname(themeOutputDir), { recursive: true });
 
-  yield* Effect.log(`Committing theme from ${stagingDir} to ${themeOutputDir}`);
-  yield* fs.copy(stagingDir, themeOutputDir);
+  yield* Effect.log(`Committing theme from ${stagingDirectory} to ${themeDirectory}`);
+
+  yield* fs.makeDirectory(path.dirname(themeDirectory), { recursive: true });
+  yield* fs.copy(stagingDirectory, themeDirectory);
 });
