@@ -14,20 +14,18 @@ const main = pipe(
       path.resolve(yield* Config.string("OMARCHY_PATH"), "version"),
     );
 
-    if (process.env.NODE_ENV === "test") {
-      yield* Effect.log("Running in test mode");
-    }
-
-    if (process.env.NODE_ENV === "development") {
-      yield* Effect.log("Running in development mode");
-      yield* Effect.log(`Using Omarchy v${omarchyVersion}`);
-    }
+    yield* Effect.log(`Running in ${process.env.NODE_ENV} mode`);
+    yield* Effect.log(`Using Omarchy v${omarchyVersion}`);
 
     const { onStart, onComplete } = yield* LifeCycle;
-
     yield* onStart;
 
-    yield* Effect.all([prepareTarget, emitColorsToml, emitBackgrounds, commitTheme]).pipe(
+    yield* pipe(
+      prepareTarget,
+      Effect.andThen(() =>
+        Effect.all([emitColorsToml, emitBackgrounds], { concurrency: "unbounded" }),
+      ),
+      Effect.andThen(commitTheme),
       Effect.provide(MainLive),
     );
 
