@@ -28,6 +28,6 @@
     "oxlint": "^1.64.0"
   },
   "peerDependencies": {
-    "typescript": "^5"
+    "typescript": "^6"
   }
 }
