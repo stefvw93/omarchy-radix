@@ -4,6 +4,7 @@
   "type": "module",
   "module": "index.ts",
   "scripts": {
+    "start": "NODE_ENV=production bun index.ts",
     "dev": "NODE_ENV=development bun --watch index.ts",
     "build": "bun build --compile index.ts",
     "lint": "oxlint",

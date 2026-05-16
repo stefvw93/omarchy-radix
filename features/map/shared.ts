@@ -1,16 +1,5 @@
-import { Context, identity, ParseResult, pipe, Schema } from "effect";
+import { identity, ParseResult, pipe, Schema } from "effect";
 import type { Mutable } from "effect/Types";
-import pkg from "../../package.json";
-
-export class ColorScalesProvider extends Context.Tag(
-  `${pkg.name}/features/colors/ColorScalesProvider`,
-)<
-  ColorScalesProvider,
-  {
-    readonly base: typeof NormalizedRadixColorScale.Type;
-    readonly accent: typeof NormalizedRadixColorScale.Type;
-  }
->() {}
 
 export const HexColor = Schema.TemplateLiteral(
   "#",

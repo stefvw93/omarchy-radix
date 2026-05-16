@@ -1,19 +1,6 @@
-import type { Option as SelectOption } from "@clack/prompts";
-import { cancel, group, intro, multiselect, outro, select, text } from "@clack/prompts";
-import * as RadixColors from "@radix-ui/colors";
-import { Config, Effect, Option, pipe, Schema } from "effect";
-import { grayScaleNames, scaleNames } from "../map/generate-radix-colors";
-import {
-  type Accent,
-  type BasePalette,
-  type Components,
-  IdentityName,
-  type Mode,
-  UserInput,
-  type Tone,
-  SUPPORTED_COMPONENTS,
-  LifeCycle,
-} from "./shared";
+import { group } from "@clack/prompts";
+import { Config, Effect, Schema } from "effect";
+import { UserInput, LifeCycle } from "./shared";
 import { Path } from "@effect/platform";
 import pkg from "../../package.json";
 import {
@@ -24,13 +11,8 @@ import {
   promptThemeDirectoryPath,
   promptTone,
 } from "./prompts";
-import { hexToAnsi } from "../../utils/hex-to-ansi";
 
 export const run = Effect.gen(function* () {
-  intro(
-    `All colors are generated from Radix Colors.\nSee https://www.radix-ui.com/colors for accurate color previews.`,
-  );
-
   const path = yield* Path.Path;
   const homeDir = yield* Config.string("HOME");
   const { onCancel: handleCancel } = yield* LifeCycle;
@@ -68,9 +50,9 @@ export const run = Effect.gen(function* () {
     slug,
   };
 
-  console.log(compiledInput);
-
-  outro(`You're all set!`);
+  if (process.env.NODE_ENV === "test" || process.env.NODE_ENV === "development") {
+    yield* Effect.log(`User input: ${JSON.stringify(compiledInput, null, 2)}`);
+  }
 
   return compiledInput;
 });

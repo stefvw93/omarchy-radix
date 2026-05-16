@@ -1,15 +1,11 @@
 import { Context, Effect, Layer, Schema } from "effect";
 import { grayScaleNames, scaleNames } from "../map/generate-radix-colors";
 import * as RadixColors from "@radix-ui/colors";
-import {
-  ColorScalesProvider,
-  RadixColorScale,
-  NormalizedColorScaleFromRadixColorScale,
-} from "../map/shared";
+import { RadixColorScale, NormalizedColorScaleFromRadixColorScale } from "../map/shared";
 import { run } from "./run";
 import { FileSystem } from "@effect/platform";
 import pkg from "../../package.json";
-import { cancel } from "@clack/prompts";
+import { cancel, intro, outro } from "@clack/prompts";
 
 // TODO: support all of these
 export const SUPPORTED_COMPONENTS = [
@@ -33,24 +29,27 @@ export const ThemeDirectoryPath = Schema.String.pipe(Schema.nonEmptyString());
 export class LifeCycle extends Context.Tag(`${pkg.name}/features/wizard/LifeCycle`)<
   LifeCycle,
   {
+    onStart: Effect.Effect<void>;
     onCancel: Effect.Effect<void>;
+    onComplete: Effect.Effect<void>;
   }
 >() {}
 
 export const LifeCycleLive = Layer.effect(
   LifeCycle,
   Effect.succeed({
+    onStart: Effect.sync(() => {
+      intro(
+        `All colors are generated from Radix Colors.\nSee https://www.radix-ui.com/colors for accurate color previews.`,
+      );
+    }),
+    onComplete: Effect.sync(() => {
+      outro(`You're all set! Your theme has been generated based on your selections.`);
+    }),
     onCancel: Effect.sync(() => {
       cancel("Operation cancelled.");
       process.exit(0);
     }),
-  }),
-);
-
-export const LifeCycleTest = Layer.effect(
-  LifeCycle,
-  Effect.succeed({
-    onCancel: Effect.void,
   }),
 );
 
@@ -64,64 +63,74 @@ export const UserInput = Schema.Struct({
   themeDirectoryPath: ThemeDirectoryPath,
 });
 
+const buildCached = <A, E, R>(self: Effect.Effect<A, E, R>) =>
+  Effect.gen(function* () {
+    const cached = yield* Effect.cached(self);
+    const ctx = yield* Effect.context<R>();
+    return cached.pipe(Effect.provide(ctx));
+  });
+
+const userInputLiveCached = buildCached(run);
+
 export class UserInputProvider extends Context.Tag(`${pkg.name}/features/wizard/UserInputProvider`)<
   UserInputProvider,
-  typeof UserInput.Type
+  Effect.Effect.Success<typeof userInputLiveCached>
 >() {}
 
-export const UserInputLive = Layer.effect(
-  UserInputProvider,
-  Effect.gen(function* () {
-    return yield* run;
-  }),
-);
+export const UserInputLive = Layer.effect(UserInputProvider, userInputLiveCached);
 
 const UserInputTest = Layer.scoped(
   UserInputProvider,
-  Effect.gen(function* () {
-    const fs = yield* FileSystem.FileSystem;
+  buildCached(
+    Effect.gen(function* () {
+      const fs = yield* FileSystem.FileSystem;
 
-    const tempDir = yield* fs.makeTempDirectoryScoped({
-      prefix: "omarchy-radix-test-",
-    });
+      const tempDir = yield* fs.makeTempDirectoryScoped({
+        prefix: "omarchy-radix-test-",
+      });
 
-    const mockInput = {
-      name: "My Theme",
-      slug: "my-theme",
-      mode: "dark",
-      basePalette: "slate",
-      accent: "indigo",
-      tone: "balanced",
-      components: [],
-      themeDirectoryPath: tempDir,
-    } as const;
+      const mockInput = yield* Schema.decodeUnknown(UserInput)({
+        slug: "my-theme",
+        mode: "dark",
+        basePalette: "slate",
+        accent: "indigo",
+        tone: "balanced",
+        components: [],
+        themeDirectoryPath: tempDir,
+      });
 
-    yield* Effect.log(`Created mock user input with temporary directory at ${tempDir}`);
-    return mockInput;
-  }),
+      yield* Effect.log(`Created mock user input with temporary directory at ${tempDir}`);
+      return mockInput;
+    }),
+  ),
 );
 
-const ColorScalesLive = Layer.effect(
-  ColorScalesProvider,
-  Effect.gen(function* () {
-    const { basePalette, accent, mode } = yield* UserInputProvider;
+export class ColorScalesProvider extends Context.Tag(
+  `${pkg.name}/features/colors/ColorScalesProvider`,
+)<ColorScalesProvider, Effect.Effect.Success<typeof colorScalesCached>>() {}
 
-    const parseColorScale = Schema.encodeUnknown(RadixColorScale);
-    const toNormalized = Schema.decode(NormalizedColorScaleFromRadixColorScale);
-    const getRadixKey = (palette: string) =>
-      `${palette}${mode === "dark" ? "Dark" : ""}` as keyof typeof RadixColors;
+const computeColorScales = Effect.gen(function* () {
+  const { basePalette, accent, mode } = yield* yield* UserInputProvider;
 
-    const baseRadixColorScale = yield* parseColorScale(RadixColors[getRadixKey(basePalette)]);
-    const normalizedBasePaletteColorScale = yield* toNormalized(baseRadixColorScale);
-    const accentRadixColorScale = yield* parseColorScale(RadixColors[getRadixKey(accent)]);
-    const normalizedAccentColorScale = yield* toNormalized(accentRadixColorScale);
+  const parseColorScale = Schema.encodeUnknown(RadixColorScale);
+  const toNormalized = Schema.decode(NormalizedColorScaleFromRadixColorScale);
+  const getRadixKey = (palette: string) =>
+    `${palette}${mode === "dark" ? "Dark" : ""}` as keyof typeof RadixColors;
 
-    return {
-      base: normalizedBasePaletteColorScale,
-      accent: normalizedAccentColorScale,
-    };
-  }),
-);
+  const baseRadixColorScale = yield* parseColorScale(RadixColors[getRadixKey(basePalette)]);
+  const normalizedBasePaletteColorScale = yield* toNormalized(baseRadixColorScale);
+  const accentRadixColorScale = yield* parseColorScale(RadixColors[getRadixKey(accent)]);
+  const normalizedAccentColorScale = yield* toNormalized(accentRadixColorScale);
+
+  return {
+    base: normalizedBasePaletteColorScale,
+    accent: normalizedAccentColorScale,
+  };
+});
+
+const colorScalesCached = buildCached(computeColorScales);
+
+const ColorScalesLive = Layer.effect(ColorScalesProvider, colorScalesCached);
 
 const ColorInputLive = Layer.merge(ColorScalesLive, UserInputLive);
 const ColorInputTest = Layer.merge(ColorScalesLive, UserInputTest);
@@ -129,7 +138,7 @@ const ColorInputTest = Layer.merge(ColorScalesLive, UserInputTest);
 export const MainLive = ColorScalesLive.pipe(
   Layer.provide(ColorInputLive),
   Layer.provideMerge(UserInputLive),
-  Layer.provide(LifeCycleLive),
+  Layer.provideMerge(LifeCycleLive),
 );
 
 export const MainTest = ColorScalesLive.pipe(

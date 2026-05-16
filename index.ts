@@ -1,17 +1,27 @@
 import { Effect, pipe } from "effect";
 import { BunRuntime, BunContext } from "@effect/platform-bun";
-import { MainLive, UserInputProvider } from "./features/wizard/shared";
+import { LifeCycle, MainLive } from "./features/wizard/shared";
 import { emitColorsToml } from "./features/emit/emit-colors-toml";
 import { emitBackgrounds } from "./features/emit/emit-backgrounds";
 
 const main = pipe(
   Effect.gen(function* () {
-    const userInput = yield* UserInputProvider;
+    if (process.env.NODE_ENV === "test") {
+      yield* Effect.log("Running in test mode");
+    }
 
-    yield* Effect.log(`User input: ${JSON.stringify(userInput, null, 2)}`);
+    if (process.env.NODE_ENV === "development") {
+      yield* Effect.log("Running in development mode");
+    }
+
+    const { onStart, onComplete } = yield* LifeCycle;
+
+    yield* onStart;
 
     yield* emitColorsToml;
     yield* emitBackgrounds;
+
+    yield* onComplete;
   }),
   Effect.provide(MainLive),
   Effect.provide(BunContext.layer),

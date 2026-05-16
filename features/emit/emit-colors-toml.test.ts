@@ -13,7 +13,7 @@ test("should emit colors in toml format", () =>
         Effect.gen(function* () {
           const fs = yield* FileSystem.FileSystem;
           const path = yield* Path.Path;
-          const userInput = yield* UserInputProvider;
+          const userInput = yield* yield* UserInputProvider;
           const exists = yield* Effect.either(
             fs.exists(path.resolve(userInput.themeDirectoryPath, userInput.slug, "colors.toml")),
           );

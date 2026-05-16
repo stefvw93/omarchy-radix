@@ -1,19 +1,17 @@
 import * as RadixColors from "@radix-ui/colors";
 import {
-  ColorScalesProvider,
   ColorsToml,
   HexColorFromString,
   NormalizedColorScaleFromRadixColorScale,
   OmarchyMapping,
   RadixColorScale,
 } from "./shared";
-import type { ParseError } from "effect/ParseResult";
-import { UserInputProvider } from "../wizard/shared";
+import { ColorScalesProvider, UserInputProvider } from "../wizard/shared";
 import { Effect, Schema } from "effect";
 
 export const mapColorsToToml = Effect.gen(function* () {
-  const { base, accent } = yield* ColorScalesProvider;
-  const userInput = yield* UserInputProvider;
+  const { base, accent } = yield* yield* ColorScalesProvider;
+  const userInput = yield* yield* UserInputProvider;
   const hex = Schema.decode(HexColorFromString);
   const dark = userInput.mode === "dark";
 
@@ -60,12 +58,8 @@ export const mapColorsToToml = Effect.gen(function* () {
   return colorsToml;
 });
 
-export const mapColorsToOmarchy: Effect.Effect<
-  typeof OmarchyMapping.Type,
-  ParseError,
-  UserInputProvider
-> = Effect.gen(function* () {
-  const { basePalette, accent, mode } = yield* UserInputProvider;
+export const mapColorsToOmarchy = Effect.gen(function* () {
+  const { basePalette, accent, mode } = yield* yield* UserInputProvider;
 
   const parseColorScale = Schema.encodeUnknown(RadixColorScale);
   const toNormalized = Schema.decode(NormalizedColorScaleFromRadixColorScale);
@@ -78,10 +72,13 @@ export const mapColorsToOmarchy: Effect.Effect<
   const normalizedAccentColorScale = yield* toNormalized(accentRadixColorScale);
 
   const colorsToml = yield* mapColorsToToml.pipe(
-    Effect.provideService(ColorScalesProvider, {
-      base: normalizedBasePaletteColorScale,
-      accent: normalizedAccentColorScale,
-    }),
+    Effect.provideService(
+      ColorScalesProvider,
+      Effect.succeed({
+        base: normalizedBasePaletteColorScale,
+        accent: normalizedAccentColorScale,
+      }),
+    ),
   );
 
   return yield* Schema.decode(OmarchyMapping)({

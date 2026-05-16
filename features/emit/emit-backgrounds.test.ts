@@ -13,7 +13,7 @@ test("should emit backgrounds", () =>
         Effect.gen(function* () {
           const fs = yield* FileSystem.FileSystem;
           const path = yield* Path.Path;
-          const userInput = yield* UserInputProvider;
+          const userInput = yield* yield* UserInputProvider;
 
           for (const asset of BACKGROUND_ASSETS) {
             const exists = yield* Effect.either(

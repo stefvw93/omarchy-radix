@@ -17,7 +17,7 @@ export const recordToLines = <T extends Record<string, unknown>>(
 
 export const resolveThemeOutputDirectory = Effect.gen(function* () {
   const path = yield* Path.Path;
-  const userInput = yield* UserInputProvider;
+  const userInput = yield* yield* UserInputProvider;
   const resolvedDir = path.resolve(userInput.themeDirectoryPath, userInput.slug);
   return resolvedDir;
 });
