@@ -1,13 +1,6 @@
 import { Path } from "@effect/platform";
-import { Effect, Data } from "effect";
+import { Effect } from "effect";
 import { UserInputProvider } from "../wizard/shared";
-
-export class FileAlreadyExistsError extends Data.TaggedError("FileAlreadyExistsError") {
-  constructor(public file: string) {
-    super();
-    this.message = `${file} already exists!`;
-  }
-}
 
 export const recordToLines = <T extends Record<string, unknown>>(
   record: T,
