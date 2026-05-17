@@ -8,8 +8,8 @@ export class Omarchy extends Context.Tag(`${pkg.name}/features/app/Omarchy`)<
   Omarchy,
   {
     readonly version: string;
-    readonly omarchyDirectory: string;
-    readonly homeDirectory: string;
+    readonly omarchyPath: string;
+    readonly homePath: string;
   }
 >() {}
 
@@ -18,13 +18,13 @@ export const OmarchyLive = Layer.effect(
   Effect.gen(function* () {
     const fs = yield* FileSystem.FileSystem;
     const path = yield* Path.Path;
-    const homeDirectory = yield* Config.string("HOME");
-    const omarchyDirectory = yield* Config.string("OMARCHY_PATH");
-    const version = yield* fs.readFileString(path.resolve(omarchyDirectory, "version"));
+    const homePath = yield* Config.string("HOME");
+    const omarchyPath = yield* Config.string("OMARCHY_PATH");
+    const version = yield* fs.readFileString(path.resolve(omarchyPath, "version"));
 
     return {
-      omarchyDirectory,
-      homeDirectory,
+      omarchyPath,
+      homePath,
       version,
     };
   }),

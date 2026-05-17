@@ -38,15 +38,19 @@ export class LifeCycle extends Context.Tag(`${pkg.name}/features/wizard/LifeCycl
 export const LifeCycleLive = Layer.effect(
   LifeCycle,
   Effect.succeed({
-    onStart: Effect.sync(() => {
+    onStart: Effect.gen(function* () {
+      yield* Effect.log("onStart called");
       intro(
         `All colors are generated from Radix Colors.\nSee https://www.radix-ui.com/colors for accurate color previews.`,
       );
     }),
-    onComplete: Effect.sync(() => {
+    onComplete: Effect.gen(function* () {
+      yield* Effect.log("onComplete called");
       outro(`You're all set! Your theme has been generated based on your selections.`);
+      process.exit(0);
     }),
-    onCancel: Effect.sync(() => {
+    onCancel: Effect.gen(function* () {
+      yield* Effect.log("onCancel called");
       cancel("Operation cancelled.");
       process.exit(0);
     }),
@@ -124,7 +128,9 @@ export class ColorScalesProvider extends Context.Tag(
   ColorScalesProvider,
   {
     readonly base: typeof NormalizedColorScaleFromRadixColorScale.Type;
+    readonly baseAlpha: typeof NormalizedColorScaleFromRadixColorScale.Type;
     readonly accent: typeof NormalizedColorScaleFromRadixColorScale.Type;
+    readonly accentAlpha: typeof NormalizedColorScaleFromRadixColorScale.Type;
   }
 >() {}
 
@@ -135,17 +141,28 @@ export const ColorScalesLive = Layer.effect(
 
     const parseColorScale = Schema.encodeUnknown(RadixColorScale);
     const toNormalized = Schema.decode(NormalizedColorScaleFromRadixColorScale);
-    const getRadixKey = (palette: string) =>
-      `${palette}${mode === "dark" ? "Dark" : ""}` as keyof typeof RadixColors;
+    const getRadixKey = (palette: string, alpha = false) =>
+      `${palette}${mode === "dark" ? "Dark" : ""}${alpha ? "A" : ""}` as keyof typeof RadixColors;
 
     const baseRadixColorScale = yield* parseColorScale(RadixColors[getRadixKey(basePalette)]);
     const normalizedBasePaletteColorScale = yield* toNormalized(baseRadixColorScale);
+    const baseAlphaRadixColorScale = yield* parseColorScale(
+      RadixColors[getRadixKey(basePalette, true)],
+    );
+    const normalizedBaseAlphaPaletteColorScale = yield* toNormalized(baseAlphaRadixColorScale);
+
     const accentRadixColorScale = yield* parseColorScale(RadixColors[getRadixKey(accent)]);
     const normalizedAccentColorScale = yield* toNormalized(accentRadixColorScale);
+    const accentAlphaRadixColorScale = yield* parseColorScale(
+      RadixColors[getRadixKey(accent, true)],
+    );
+    const normalizedAccentAlphaColorScale = yield* toNormalized(accentAlphaRadixColorScale);
 
     return {
       base: normalizedBasePaletteColorScale,
+      baseAlpha: normalizedBaseAlphaPaletteColorScale,
       accent: normalizedAccentColorScale,
+      accentAlpha: normalizedAccentAlphaColorScale,
     };
   }),
 );

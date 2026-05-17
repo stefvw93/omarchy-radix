@@ -5,7 +5,7 @@ import { MainTUILive, Omarchy, OmarchyLive } from "./features/app/shared";
 import { emitColorsToml } from "./features/emit/emit-colors-toml";
 import { emitBackgrounds } from "./features/emit/emit-backgrounds";
 import { commitTheme, prepareTarget } from "./features/emit/emit-theme-dir";
-import { emitWalker } from "./features/emit/emit-walker";
+import { emitWalkerCss } from "./features/emit/emit-walker-css";
 
 const main = pipe(
   Effect.gen(function* () {
@@ -15,20 +15,20 @@ const main = pipe(
     yield* Effect.log(`Using Omarchy v${omarchyVersion}`);
 
     const { onStart, onComplete } = yield* LifeCycle;
-    const emitTheme = Effect.all([emitColorsToml, emitBackgrounds, emitWalker], {
+    const emitTheme = Effect.all([emitColorsToml, emitBackgrounds, emitWalkerCss], {
       concurrency: "unbounded",
     });
 
+    yield* onStart;
+
     yield* pipe(
-      onStart,
-      Effect.andThen(prepareTarget),
+      prepareTarget,
       Effect.andThen(emitTheme),
       Effect.andThen(commitTheme),
-      Effect.andThen(onComplete),
       Effect.provide(MainTUILive),
     );
 
-    process.exit(0);
+    yield* onComplete;
   }),
   Effect.scoped,
   Effect.provide(OmarchyLive),
