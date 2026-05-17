@@ -1,6 +1,7 @@
 import { expect, test } from "bun:test";
 import { Effect, Either, pipe } from "effect";
-import { MainTest, UserInputProvider } from "../wizard/shared";
+import { UserInputProvider } from "../wizard/shared";
+import { MainTUITest } from "../app/shared";
 import { BunContext } from "@effect/platform-bun";
 import { FileSystem, Path } from "@effect/platform";
 import { BACKGROUND_ASSETS, emitBackgrounds } from "./emit-backgrounds";
@@ -32,7 +33,7 @@ test("should emit backgrounds", () =>
         }
       }),
       Effect.scoped,
-      Effect.provide(MainTest),
+      Effect.provide(MainTUITest),
       Effect.provide(BunContext.layer),
     ),
   ));

@@ -5,7 +5,7 @@ import { RadixColorScale, NormalizedColorScaleFromRadixColorScale } from "../map
 import { run } from "./run";
 import { FileSystem, Path } from "@effect/platform";
 import pkg from "../../package.json";
-import { cancel, confirm, intro, isCancel, outro } from "@clack/prompts";
+import { cancel, intro, outro } from "@clack/prompts";
 
 // TODO: support all of these
 export const SUPPORTED_COMPONENTS = [
@@ -68,9 +68,9 @@ export class UserInputProvider extends Context.Tag(`${pkg.name}/features/wizard/
   typeof UserInput.Type
 >() {}
 
-const UserInputLive = Layer.effect(UserInputProvider, run);
+export const UserInputLive = Layer.effect(UserInputProvider, run);
 
-const UserInputTest = Layer.scoped(
+export const UserInputTest = Layer.scoped(
   UserInputProvider,
   Effect.gen(function* () {
     const fs = yield* FileSystem.FileSystem;
@@ -128,7 +128,7 @@ export class ColorScalesProvider extends Context.Tag(
   }
 >() {}
 
-const ColorScalesLive = Layer.effect(
+export const ColorScalesLive = Layer.effect(
   ColorScalesProvider,
   Effect.gen(function* () {
     const { basePalette, accent, mode } = yield* UserInputProvider;
@@ -148,44 +148,4 @@ const ColorScalesLive = Layer.effect(
       accent: normalizedAccentColorScale,
     };
   }),
-);
-
-export class OverwritePermission extends Context.Tag(
-  `${pkg.name}/features/wizard/OverwritePermission`,
-)<OverwritePermission, () => Effect.Effect<boolean>>() {}
-
-export const OverwritePermissionLive = Layer.effect(
-  OverwritePermission,
-  Effect.gen(function* () {
-    const { onCancel } = yield* LifeCycle;
-    const { themeDirectory } = yield* Output;
-
-    const overwritePermission = () =>
-      Effect.async<boolean>((resume) => {
-        confirm({
-          message: `The directory ${themeDirectory} already exists. Do you want to overwrite it?`,
-          initialValue: false,
-        }).then((value) => {
-          if (isCancel(value)) {
-            return resume(Effect.zipRight(onCancel, Effect.interrupt));
-          }
-          resume(Effect.succeed(value));
-        });
-      });
-
-    return overwritePermission;
-  }),
-);
-
-export const MainLive = ColorScalesLive.pipe(
-  Layer.provideMerge(OverwritePermissionLive),
-  Layer.provideMerge(OutputLive),
-  Layer.provideMerge(ColorScalesLive),
-  Layer.provideMerge(UserInputLive),
-);
-
-export const MainTest = ColorScalesLive.pipe(
-  Layer.provideMerge(OutputLive),
-  Layer.provideMerge(ColorScalesLive),
-  Layer.provideMerge(UserInputTest),
 );

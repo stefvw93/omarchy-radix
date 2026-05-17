@@ -1,6 +1,7 @@
 import { Effect } from "effect";
 import { FileSystem, Path } from "@effect/platform";
-import { LifeCycle, Output, OverwritePermission } from "../wizard/shared";
+import { LifeCycle, Output } from "../wizard/shared";
+import { OverwritePermission } from "./shared";
 
 export const prepareTarget = Effect.gen(function* () {
   const fs = yield* FileSystem.FileSystem;

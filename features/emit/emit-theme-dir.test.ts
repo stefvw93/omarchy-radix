@@ -2,8 +2,10 @@ import { expect, test } from "bun:test";
 import { Effect, Exit, Layer, pipe } from "effect";
 import { BunContext } from "@effect/platform-bun";
 import { FileSystem, Path } from "@effect/platform";
-import { LifeCycle, MainTest, Output, OverwritePermission } from "../wizard/shared";
+import { LifeCycle, Output } from "../wizard/shared";
+import { MainTUITest } from "../app/shared";
 import { commitTheme, prepareTarget } from "./emit-theme-dir";
+import { OverwritePermission } from "./shared";
 
 const LifeCycleSilent = Layer.succeed(LifeCycle, {
   onStart: Effect.void,
@@ -17,7 +19,7 @@ const runWith = <A, E, R>(answer: boolean, self: Effect.Effect<A, E, R>) =>
       self,
       Effect.scoped,
       Effect.provide(LifeCycleSilent),
-      Effect.provide(MainTest),
+      Effect.provide(MainTUITest),
       Effect.provide(BunContext.layer),
     ) as Effect.Effect<A, E, never>,
   );
