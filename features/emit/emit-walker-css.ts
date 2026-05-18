@@ -9,72 +9,67 @@ import pkg from "../../package.json";
 export const emitWalkerCss = Effect.gen(function* () {
   const fs = yield* FileSystem.FileSystem;
   const path = yield* Path.Path;
-  const { omarchyPath } = yield* Omarchy;
   const { stagingDirectory } = yield* Output;
   const colorScales = yield* ColorScalesProvider;
-  const resolvedPath = path.resolve(stagingDirectory, "walker.css");
-  const { accent, foreground, background } = yield* mapColorsToToml;
+  const walkerCssPath = path.resolve(stagingDirectory, "walker.css");
+  const hyprConfigPath = path.resolve(stagingDirectory, "hyprland.conf");
 
-  // const walkerTemplatePath = path.resolve(omarchyPath, "default", "themed", "walker.css.tpl");
-  // yield* Effect.log(`Found walker template at ${walkerTemplatePath}`);
+  const walkerCss = /* CSS */ `
 
-  const defineColors = yield* recordToLines(
-    {
-      // Default Omarchy color definitions -- used as fallback values
+/* Colors by ${pkg.name} -- defined for default Omarchy configs. */
 
-      "selected-text": colorScales.base[12], // @define-color selected-text {{ accent }};
-      text: colorScales.base[11], // @define-color text {{ foreground }};
-      base: colorScales.base[2], // @define-color base {{ background }};
-      border: colorScales.base[8], // @define-color border {{ foreground }};
-      foreground: "#0000ff", // @define-color foreground {{ foreground }};
-      background: "#ff0000", // @define-color background {{ background }};
+@define-color selected-text ${colorScales.base[12]};
+@define-color text ${colorScales.base[11]};
+@define-color base ${colorScales.base[2]};
+@define-color border ${colorScales.base[8]};
+@define-color foreground ${colorScales.base[11]};
+@define-color background ${colorScales.base[1]};
 
-      // Custom color definitions
-    },
-    (key, value) => /** css */ `@define-color ${key} ${value};`,
-  );
-
-  const _selectors = /* CSS */ `
+:root {
+  --gtk-layout-spacing: 10px;
+  --space: 16px;
+}
 
 /* Styles by ${pkg.name} */
 
 window .box-wrapper {
   background: alpha(${colorScales.base[2]}, 0.6);
-  border: 1px solid @border;
+  border: 1px solid ${colorScales.base[8]};
+  border-radius: 14px;
+  padding: var(--space) var(--space) 0 var(--space);
 }
 
 window .search-container {
-  background: ${colorScales.baseAlpha[1]};
+  background: alpha(#000, 0);
+  border-bottom: 1px solid ${colorScales.base[6]};
+}
+
+window .list {
+  margin-top: calc(var(--gtk-layout-spacing) * -1);
+  padding: var(--space) 0;
+}
+
+window child {
+  border-radius: 8px;
 }
 
 window child:selected {
   background: ${colorScales.baseAlpha[5]};
 }
 
-`;
+window .content-container .placeholder {
+  margin-bottom: var(--space);
+}
+`.trim();
 
-  const selectors = yield* recordToLines(
-    {
-      // .box-wrapper {
-      //   background: alpha(@base, 0.95);
-      //   padding: 20px;
-      //   border: 2px solid @border;
-      // }
-      // child:selected {
-      //   background: alpha(@text, 0.07);
-      // }
-      "window child:selected": yield* recordToLines(
-        {
-          background: "#00ff00", // colorScales.base[5],
-        },
-        (key, value) => `${key}: ${value};`,
-      ).pipe(Effect.map((lines) => ` {\n${lines.join("\n")}\n}`)),
-    },
-    (key, value) => `${key}${value}`,
-  );
+  const hyprConfig = /* Hyprland config */ `
 
-  const walkerCssContent = [...defineColors, "", _selectors.trim()].join("\n");
+layerrule = blur on, match:namespace walker
+layerrule = ignore_alpha 0.5, match:namespace walker
 
-  yield* Effect.log(`Emitting walker.css to staging at ${resolvedPath}`);
-  yield* fs.writeFileString(resolvedPath, walkerCssContent);
+`.trim();
+
+  yield* Effect.log(`Emitting walker.css to staging at ${walkerCssPath}`);
+  yield* fs.writeFileString(walkerCssPath, walkerCss);
+  yield* fs.writeFileString(hyprConfigPath, hyprConfig, { flag: "a" });
 });
