@@ -97,7 +97,7 @@ export const promptAccent: PromptFactory<typeof Accent.Type> = ({ results }) => 
 
   return p.select({
     message: "Choose an accent color",
-    initialValue: "indigo" as const,
+    initialValue: "blue" as const,
     options,
   });
 };

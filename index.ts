@@ -6,7 +6,8 @@ import { emitColorsToml } from "./features/emit/emit-colors-toml";
 import { emitBackgrounds } from "./features/emit/emit-backgrounds";
 import { commitTheme, prepareTarget } from "./features/emit/emit-theme-dir";
 import { emitWalkerCss } from "./features/emit/emit-walker-css";
-import { emitHyprlandConf } from "./features/emit/emit-hypr";
+import { emitHyprlandConf } from "./features/emit/emit-hyprland-conf";
+import { emitMakoIni } from "./features/emit/emit-mako-ini";
 
 const main = pipe(
   Effect.gen(function* () {
@@ -17,7 +18,7 @@ const main = pipe(
 
     const { onStart, onComplete } = yield* LifeCycle;
     const emitTheme = Effect.all(
-      [emitColorsToml, emitBackgrounds, Effect.all([emitHyprlandConf, emitWalkerCss])],
+      [emitColorsToml, emitBackgrounds, emitHyprlandConf, emitWalkerCss, emitMakoIni],
       {
         concurrency: "unbounded",
       },

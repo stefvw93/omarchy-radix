@@ -12,7 +12,6 @@ export const emitHyprlandConf = Effect.gen(function* () {
 
   const hyprConfig = `
 # Hyprland configuration by ${pkg.name}
-# Created at ${new Date().toISOString()}
 
 # https://wiki.hyprland.org/Configuring/Variables/#general
 general {

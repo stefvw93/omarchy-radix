@@ -68,7 +68,11 @@ window child {
 }
 
 window child:selected {
-  background: ${colorScales.baseAlpha[5]};
+  background: ${colorScales.accentAlpha[5]};
+}
+
+window child:selected .item-box * {
+  color: ${colorScales.accent[12]};
 }
 
 window .content-container .placeholder {
