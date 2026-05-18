@@ -29,28 +29,45 @@ export const promptMode: PromptFactory<typeof Mode.Type> = () =>
     initialValue: "dark" as const,
   });
 
-const _DARK_ACCENTS = new Set<typeof Accent.Type>([
+const SCALES_FOR_LIGHT_FOREGROUND = new Set<typeof Accent.Type>([
+  // "bronze",
+  "blue",
   "brown",
-  "orange",
-  "tomato",
-  "red",
-  "ruby",
   "crimson",
+  "cyan",
+  "gold",
+  "grass",
+  "green",
+  "indigo",
+  "iris",
+  "jade",
+  "orange",
   "pink",
   "plum",
   "purple",
-  "violet",
-  "iris",
-  "indigo",
-  "blue",
-  "cyan",
+  "red",
+  "ruby",
   "teal",
-  "jade",
-  "green",
-  "grass",
+  "tomato",
+  "violet",
 ]);
 
-const _LIGHT_ACCENTS = new Set<typeof Accent.Type>(["sky", "mint", "lime", "yellow", "amber"]);
+const SCALES_FOR_DARK_FOREGROUND = new Set<typeof Accent.Type>([
+  "sky",
+  "mint",
+  "lime",
+  "yellow",
+  "amber",
+]);
+
+const NATURAL_PAIRING = new Map<typeof BasePalette.Type, Set<typeof Accent.Type>>([
+  ["gray", new Set()],
+  ["mauve", new Set(["crimson", "pink", "plum", "purple", "red", "ruby", "tomato", "violet"])],
+  ["slate", new Set(["iris", "indigo", "blue", "sky", "cyan"])],
+  ["sage", new Set(["mint", "teal", "jade", "green"])],
+  ["olive", new Set(["grass", "lime"])],
+  ["sand", new Set(["yellow", "amber", "orange", "brown"])],
+]);
 
 const makeColorOptions = <T extends readonly string[]>(
   colors: T,
@@ -87,10 +104,38 @@ export const promptAccent: PromptFactory<typeof Accent.Type> = ({ results }) => 
     throw new PromptError({ message: "Mode must be selected before accent color." });
   }
 
+  if (!results.basePalette) {
+    throw new PromptError({ message: "Base palette must be selected before accent color." });
+  }
+
+  const options = makeColorOptions(
+    scaleNames.filter((key) => {
+      const matchesMode =
+        results.mode === "dark"
+          ? SCALES_FOR_LIGHT_FOREGROUND.has(key)
+          : SCALES_FOR_DARK_FOREGROUND.has(key);
+
+      if (!matchesMode) return false;
+
+      if (results.basePalette === "gray") return true; // gray pairs well with everything, no need to filter further
+
+      const naturalPairing = NATURAL_PAIRING.get(results.basePalette!);
+
+      if (!naturalPairing) {
+        throw new PromptError({
+          message: `No natural pairing found for base palette ${results.basePalette} in mode ${results.mode}`,
+        });
+      }
+
+      return naturalPairing?.has(key);
+    }),
+    results.mode,
+  );
+
   return p.select({
     message: "Choose an accent color",
     initialValue: "blue" as const,
-    options: makeColorOptions(scaleNames, results.mode),
+    options,
   });
 };
 
