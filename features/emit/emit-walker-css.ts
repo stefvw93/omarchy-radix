@@ -1,8 +1,5 @@
 import { Effect } from "effect";
 import { FileSystem, Path } from "@effect/platform";
-import { Omarchy } from "../app/shared";
-import { mapColorsToToml } from "../map/map";
-import { recordToLines } from "./shared";
 import { ColorScalesProvider, Output } from "../wizard/shared";
 import pkg from "../../package.json";
 
@@ -15,7 +12,6 @@ export const emitWalkerCss = Effect.gen(function* () {
   const hyprConfigPath = path.resolve(stagingDirectory, "hyprland.conf");
 
   const walkerCss = /* CSS */ `
-
 /* Colors by ${pkg.name} -- defined for default Omarchy configs. */
 
 @define-color selected-text ${colorScales.base[12]};
@@ -78,14 +74,14 @@ window child:selected {
 window .content-container .placeholder {
   margin-bottom: var(--space);
 }
-`.trim();
+`;
 
-  const hyprConfig = /* Hyprland config */ `
+  const hyprConfig = `
+# Walker configuration by ${pkg.name}
 
 layerrule = blur on, match:namespace walker
 layerrule = ignore_alpha 0.5, match:namespace walker
-
-`.trim();
+`;
 
   yield* Effect.log(`Emitting walker.css to staging at ${walkerCssPath}`);
   yield* fs.writeFileString(walkerCssPath, walkerCss);

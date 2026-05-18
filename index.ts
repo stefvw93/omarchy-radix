@@ -6,6 +6,7 @@ import { emitColorsToml } from "./features/emit/emit-colors-toml";
 import { emitBackgrounds } from "./features/emit/emit-backgrounds";
 import { commitTheme, prepareTarget } from "./features/emit/emit-theme-dir";
 import { emitWalkerCss } from "./features/emit/emit-walker-css";
+import { emitHyprlandConf } from "./features/emit/emit-hypr";
 
 const main = pipe(
   Effect.gen(function* () {
@@ -15,9 +16,12 @@ const main = pipe(
     yield* Effect.log(`Using Omarchy v${omarchyVersion}`);
 
     const { onStart, onComplete } = yield* LifeCycle;
-    const emitTheme = Effect.all([emitColorsToml, emitBackgrounds, emitWalkerCss], {
-      concurrency: "unbounded",
-    });
+    const emitTheme = Effect.all(
+      [emitColorsToml, emitBackgrounds, Effect.all([emitHyprlandConf, emitWalkerCss])],
+      {
+        concurrency: "unbounded",
+      },
+    );
 
     yield* onStart;
 
