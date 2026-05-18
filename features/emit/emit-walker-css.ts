@@ -39,6 +39,13 @@ window .box-wrapper {
   padding: var(--space) var(--space) 0 var(--space);
   margin: 40px;
   box-shadow: 0 8px 30px 0 rgba(0, 0, 0, 0.35);
+
+  /* transition: background 1s ease-out;
+  opacity: 0; */
+}
+
+window .box-wrapper:focus-visible {
+  /** opacity: 1; */
 }
 
 window .search-container {
