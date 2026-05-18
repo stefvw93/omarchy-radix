@@ -8,8 +8,11 @@ import {
   promptBasePalette,
   promptComponents,
   promptMode,
+  promptSemanticError,
+  promptSemanticInfo,
+  promptSemanticSuccess,
+  promptSemanticWarning,
   promptThemeDirectoryPath,
-  promptTone,
 } from "./prompts";
 
 export const run = Effect.gen(function* () {
@@ -23,7 +26,10 @@ export const run = Effect.gen(function* () {
         mode: promptMode,
         basePalette: promptBasePalette,
         accent: promptAccent,
-        tone: promptTone,
+        semanticError: promptSemanticError,
+        semanticSuccess: promptSemanticSuccess,
+        semanticWarning: promptSemanticWarning,
+        semanticInfo: promptSemanticInfo,
         components: promptComponents,
         themeDirectoryPath: promptThemeDirectoryPath(
           path.resolve(homeDir, ".config/omarchy/themes"),
@@ -41,9 +47,7 @@ export const run = Effect.gen(function* () {
     ...promptInputs,
   });
 
-  const slug = slugify(
-    [pkg.name, userInput.accent, userInput.basePalette, userInput.tone, userInput.mode].join("-"),
-  );
+  const slug = slugify([pkg.name, userInput.accent, userInput.mode].join("-"));
 
   const compiledInput: typeof UserInput.Type = {
     ...userInput,

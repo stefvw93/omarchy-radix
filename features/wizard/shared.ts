@@ -20,7 +20,12 @@ export const SUPPORTED_COMPONENTS = [
 export const Mode = Schema.Literal("dark", "light");
 export const BasePalette = Schema.Literal(...grayScaleNames);
 export const Accent = Schema.Literal(...scaleNames);
-export const Tone = Schema.Literal("calm", "balanced", "high-contrast");
+export const SemanticError = Accent.pipe(Schema.pickLiteral("red", "ruby", "tomato", "crimson"));
+export const SemanticSuccess = Accent.pipe(
+  Schema.pickLiteral("green", "teal", "jade", "grass", "mint"),
+);
+export const SemanticWarning = Accent.pipe(Schema.pickLiteral("yellow", "amber", "orange"));
+export const SemanticInfo = Accent.pipe(Schema.pickLiteral("blue", "indigo", "sky", "cyan"));
 export const Components = Schema.Array(Schema.Literal(...SUPPORTED_COMPONENTS));
 export const IdentityName = Schema.String.pipe(Schema.nonEmptyString());
 export const IdentitySlug = Schema.String.pipe(Schema.nonEmptyString());
@@ -62,7 +67,10 @@ export const UserInput = Schema.Struct({
   mode: Mode,
   basePalette: BasePalette,
   accent: Accent,
-  tone: Tone,
+  semanticError: SemanticError,
+  semanticSuccess: SemanticSuccess,
+  semanticWarning: SemanticWarning,
+  semanticInfo: SemanticInfo,
   components: Components,
   themeDirectoryPath: ThemeDirectoryPath,
 });
@@ -83,12 +91,15 @@ export const UserInputTest = Layer.scoped(
       prefix: "omarchy-radix-test-",
     });
 
-    const mockInput = yield* Schema.decodeUnknown(UserInput)({
+    const mockInput = yield* Schema.decode(UserInput)({
       slug: "my-theme",
       mode: "dark",
       basePalette: "slate",
       accent: "indigo",
-      tone: "balanced",
+      semanticError: "red",
+      semanticSuccess: "green",
+      semanticWarning: "yellow",
+      semanticInfo: "blue",
       components: [],
       themeDirectoryPath: tempDir,
     });
@@ -131,38 +142,47 @@ export class ColorScalesProvider extends Context.Tag(
     readonly baseAlpha: typeof NormalizedColorScaleFromRadixColorScale.Type;
     readonly accent: typeof NormalizedColorScaleFromRadixColorScale.Type;
     readonly accentAlpha: typeof NormalizedColorScaleFromRadixColorScale.Type;
+    readonly semanticError: typeof NormalizedColorScaleFromRadixColorScale.Type;
+    readonly semanticErrorAlpha: typeof NormalizedColorScaleFromRadixColorScale.Type;
   }
 >() {}
 
 export const ColorScalesLive = Layer.effect(
   ColorScalesProvider,
   Effect.gen(function* () {
-    const { basePalette, accent, mode } = yield* UserInputProvider;
-
+    const userInput = yield* UserInputProvider;
     const parseColorScale = Schema.encodeUnknown(RadixColorScale);
     const toNormalized = Schema.decode(NormalizedColorScaleFromRadixColorScale);
-    const getRadixKey = (palette: string, alpha = false) =>
-      `${palette}${mode === "dark" ? "Dark" : ""}${alpha ? "A" : ""}` as keyof typeof RadixColors;
 
-    const baseRadixColorScale = yield* parseColorScale(RadixColors[getRadixKey(basePalette)]);
-    const normalizedBasePaletteColorScale = yield* toNormalized(baseRadixColorScale);
-    const baseAlphaRadixColorScale = yield* parseColorScale(
-      RadixColors[getRadixKey(basePalette, true)],
-    );
-    const normalizedBaseAlphaPaletteColorScale = yield* toNormalized(baseAlphaRadixColorScale);
+    const makeColorScale = (key: keyof typeof RadixColors) =>
+      Effect.gen(function* () {
+        const darkSuffix = userInput.mode === "dark" ? "Dark" : "";
+        const radixKey = `${key}${darkSuffix}` as keyof typeof RadixColors;
+        const radixKeyAlpha = `${key}${darkSuffix}A` as keyof typeof RadixColors;
+        const radixColorScale = yield* parseColorScale(RadixColors[radixKey]);
+        const normalizedColorScale = yield* toNormalized(radixColorScale);
+        const alphaRadixColorScale = yield* parseColorScale(RadixColors[radixKeyAlpha]);
+        const normalizedAlphaColorScale = yield* toNormalized(alphaRadixColorScale);
 
-    const accentRadixColorScale = yield* parseColorScale(RadixColors[getRadixKey(accent)]);
-    const normalizedAccentColorScale = yield* toNormalized(accentRadixColorScale);
-    const accentAlphaRadixColorScale = yield* parseColorScale(
-      RadixColors[getRadixKey(accent, true)],
-    );
-    const normalizedAccentAlphaColorScale = yield* toNormalized(accentAlphaRadixColorScale);
+        return {
+          radix: radixColorScale,
+          radixAlpha: alphaRadixColorScale,
+          normalized: normalizedColorScale,
+          normalizedAlpha: normalizedAlphaColorScale,
+        };
+      });
+
+    const base = yield* makeColorScale(userInput.basePalette);
+    const accent = yield* makeColorScale(userInput.accent);
+    const semanticError = yield* makeColorScale(userInput.semanticError);
 
     return {
-      base: normalizedBasePaletteColorScale,
-      baseAlpha: normalizedBaseAlphaPaletteColorScale,
-      accent: normalizedAccentColorScale,
-      accentAlpha: normalizedAccentAlphaColorScale,
+      base: base.normalized,
+      baseAlpha: base.normalizedAlpha,
+      accent: accent.normalized,
+      accentAlpha: accent.normalizedAlpha,
+      semanticError: semanticError.normalized,
+      semanticErrorAlpha: semanticError.normalizedAlpha,
     };
   }),
 );
