@@ -41,7 +41,7 @@ window .box-wrapper {
 
 window .search-container {
   background: alpha(#000, 0);
-  border-bottom: 1px solid ${colorScales.base[6]};
+  border-bottom: 1px solid ${colorScales.baseAlpha[2]};
 }
 
 window .list {
