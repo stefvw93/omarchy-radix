@@ -37,6 +37,8 @@ window .box-wrapper {
   border: 1px solid ${colorScales.base[8]};
   border-radius: 14px;
   padding: var(--space) var(--space) 0 var(--space);
+  margin: 40px;
+  box-shadow: 0 8px 30px 0 rgba(0, 0, 0, 0.35);
 }
 
 window .search-container {
