@@ -44,6 +44,15 @@ window .search-container {
   border-bottom: 1px solid ${colorScales.baseAlpha[2]};
 }
 
+window .input text {
+  color: ${colorScales.base[12]};
+}
+
+window .input placeholder {
+  opacity: 1;
+  color: ${colorScales.base[11]};
+}
+
 window .list {
   margin-top: calc(var(--gtk-layout-spacing) * -1);
   padding: var(--space) 0;
