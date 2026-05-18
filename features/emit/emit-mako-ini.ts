@@ -24,5 +24,5 @@ font=monospace 10
 `;
 
   yield* Effect.log(`Emitting mako.ini to staging at ${makoIniPath}`);
-  yield* fs.writeFileString(makoIniPath, makoIni, { flag: "a" });
+  yield* fs.writeFileString(makoIniPath, makoIni);
 });
